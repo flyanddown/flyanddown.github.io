@@ -1,0 +1,289 @@
+<style type="text/css">
+
+html, body{width: 100%; height: 100%; padding: 0; margin: 0; overflow: hidden;}
+
+canvas{background: black;}
+
+</style>
+
+<canvas></canvas>
+
+<script type="text/javascript" src="js/base.js"></script>
+
+<script>
+
+	
+
+	var Rain = Rain || (function(){
+
+		
+
+		var _canvas = document.getElementsByTagName('canvas')[0];
+
+		var _context = _canvas.getContext('2d');
+
+		var _raindrop_count = 1;
+
+		var _raindrop_group = [];
+
+		var _wave_group = [];
+
+		var _env = {
+
+			floor_height: 100,
+
+			canvas_width: 0,
+
+			canvas_height: 0
+
+		};
+
+		var _raindrop = function(mx, my/*, lx, ly*/, lw, vx, vy, ax, ay){
+
+			this.mx = mx;		// 起点X
+
+			this.my = my;		// 起点Y
+
+			//this.lx = lx;		// 结束点X
+
+			//this.ly = ly;		// 结束点Y
+
+			this.lw = lw;		// 线宽
+
+			this.vx = vx;		// 水平速度
+
+			this.vy = vy;		// 垂直速度
+
+			this.ax = ax;		// 水平加速度
+
+			this.ay = ay;		// 垂直加速度
+
+		};
+
+		var _wave = function(x, y, rx, ry, vx, vy, a, va){
+
+			this.x = x;
+
+			this.y = y;
+
+			this.rx = rx;
+
+			this.ry = ry;
+
+			this.vx = vx;
+
+			this.vy = vy;
+
+			this.a = a;
+
+			this.va = va;
+
+		};
+
+		
+
+		// 方法来自http://www.cnblogs.com/shn11160/archive/2012/08/27/2658057.html
+
+		function BezierEllipse1(context, x, y, a, b, s)
+
+		{
+
+		   //关键是bezierCurveTo中两个控制点的设置
+
+		   //0.5和0.6是两个关键系数（在本函数中为试验而得）
+
+		   var ox = 0.5 * a,
+
+			   oy = 0.6 * b;
+
+ 
+
+		   context.save();
+
+		   context.translate(x, y);
+
+		   context.beginPath();
+
+		   context.strokeStyle = s;
+
+		   //从椭圆纵轴下端开始逆时针方向绘制
+
+		   context.moveTo(0, b); 
+
+		   context.bezierCurveTo(ox, b, a, oy, a, 0);
+
+		   context.bezierCurveTo(a, -oy, ox, -b, 0, -b);
+
+		   context.bezierCurveTo(-ox, -b, -a, -oy, -a, 0);
+
+		   context.bezierCurveTo(-a, oy, -ox, b, 0, b);
+
+		   context.closePath();
+
+		   context.stroke();
+
+		   context.restore();
+
+ 
+
+		};
+
+		
+
+		var _onResize = function(){
+
+			_canvas.width = document.width;
+
+			_canvas.height = document.height;
+
+			_env.canvas_width = document.width;
+
+			_env.canvas_height = document.height;
+
+		}
+
+		
+
+		var _createRaindrop = function(){
+
+			var mx = Math.random() * _env.canvas_width;
+
+			var my = Math.random() * (- _env.floor_height);
+
+			var vx = Math.random() * -1 - 1;
+
+			var vy = Math.random() * 2 + 14;
+
+			var ax = Math.random() * 0;
+
+			var ay = Math.random() * 0.2;
+
+			return new _raindrop(mx, my, 1, vx, vy, ax, ay);
+
+		}
+
+		
+
+		var _createWave = function(x, y, vx, vy){
+
+			return new _wave(x, y, 2, 1, 2, 1, 1, .05);
+
+		}
+
+		
+
+		var _waving = function(){
+
+			_wave_group.each(function(index, wave){
+
+				wave.rx += wave.vx;
+
+				wave.ry += wave.vy;
+
+				wave.a -= wave.va;
+
+				if(wave.a <= 0){
+
+					_wave_group.remove(index);
+
+					return false;
+
+				}
+
+				BezierEllipse1(_context, wave.x, wave.y, wave.rx, wave.ry, 'rgba(255, 255, 255, {0})'.format(wave.a));
+
+			});
+
+		}
+
+		
+
+		var _Rainning = function(){
+
+			for (var i = 0; i < _raindrop_count; i++){
+
+				var _raindrop = _createRaindrop();
+
+				_raindrop_group.push(_raindrop);
+
+			}
+
+			_raindrop_group.each(function(index, raindrop){
+
+				raindrop.lx = raindrop.mx;
+
+				raindrop.ly = raindrop.my;
+
+				raindrop.vx += raindrop.ax;
+
+				raindrop.vy += raindrop.ay;
+
+				raindrop.mx += raindrop.vx;
+
+				raindrop.my += raindrop.vy;
+
+				if(raindrop.my > (_env.canvas_height - _env.floor_height)){
+
+					var wave = _createWave(raindrop.mx, raindrop.my);
+
+					_raindrop_group.remove(index);
+
+					_wave_group.push(wave);
+
+					return false;
+
+				}
+
+				_context.beginPath();
+
+				_context.lineWidth = raindrop.lw;
+
+				_context.moveTo(raindrop.mx, raindrop.my);
+
+				_context.lineTo(raindrop.lx, raindrop.ly);
+
+				_context.stroke();
+
+			});
+
+		}
+
+		
+
+		return {
+
+			init: function(){
+
+				window.onresize = _onResize;
+
+				_onResize();
+
+				_context.strokeStyle = '#999';
+
+				setInterval(function(){
+
+					_context.clearRect(0, 0, _env.canvas_width, _env.canvas_height);
+
+					_Rainning();
+
+					_waving();
+
+				}, 33);
+
+			}
+
+		}
+
+		
+
+	})();
+
+ 
+
+	Rain.init();
+
+	
+
+</script>
+
+			
