@@ -1,9 +1,0 @@
-DROP TABLE IF EXISTS `talk`;
-CREATE TABLE `talk` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
-  `send` varchar(10) CHARACTER SET utf8 DEFAULT NULL COMMENT '发送者昵称',
-  `ip` varchar(12) CHARACTER SET utf8 DEFAULT NULL,
-  `content` varchar(500) CHARACTER SET utf8 DEFAULT NULL,
-  `time` varchar(50) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8;
